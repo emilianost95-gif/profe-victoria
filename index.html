@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#04060d">
+<title>Experimento #001 — Flores amarillas</title>
+<meta name="description" content="Un pequeño experimento científico cuyo resultado son flores amarillas.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   EXPERIMENTO #001 — hoja de estilos
+   ============================================================ */
+:root{
+  --bg-deep:#03050b;
+  --cream:#fff6dc;
+  --yellow:#ffd54a;
+  --gold:#f2b705;
+  --soft:rgba(255,246,220,.55);
+  --cold:rgba(178,205,255,.45);
+  --mono:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --serif:'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+html,body{
+  height:100%;
+  width:100%;
+  overflow:hidden;                 /* nunca scroll, ni vertical ni horizontal */
+  overscroll-behavior:none;
+  background:var(--bg-deep);
+}
+
+body{
+  font-family:var(--serif);
+  color:var(--cream);
+  background:radial-gradient(130% 95% at 50% 0%, #0b1226 0%, #070b18 42%, #03050b 100%);
+  -webkit-font-smoothing:antialiased;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+  user-select:none;
+  -webkit-user-select:none;
+}
+
+/* ---------- capas ---------- */
+#glow{
+  position:fixed; inset:0; z-index:0; pointer-events:none; opacity:0;
+  transition:opacity 3s ease;
+  background:
+    radial-gradient(58% 48% at 50% 55%, rgba(255,196,60,.18), rgba(255,170,30,.06) 45%, transparent 72%),
+    radial-gradient(120% 80% at 50% 110%, rgba(120,180,110,.07), transparent 60%);
+}
+#glow.on{opacity:1}
+
+#scene{position:fixed; inset:0; z-index:1; display:block}
+
+#stage{
+  position:fixed; inset:0; z-index:2;
+  pointer-events:none;
+  padding:clamp(16px,5vw,48px);
+}
+
+#flash{
+  position:fixed; inset:0; z-index:3; pointer-events:none; opacity:0;
+  background:radial-gradient(circle at 50% 50%, rgba(255,243,205,.95), rgba(255,200,80,.3) 38%, transparent 70%);
+}
+
+/* ---------- paneles ---------- */
+.panel{
+  position:absolute; left:50%; top:50%;
+  transform:translate(-50%,-50%);
+  width:min(780px, 92vw);
+  text-align:center;
+  display:none;
+}
+.panel.on{display:block}
+
+/* ---------- animación base de cada línea ---------- */
+.line{
+  opacity:0;
+  filter:blur(12px);
+  transform:translateY(16px);
+  transition:
+    opacity 1.15s cubic-bezier(.25,.6,.25,1),
+    filter  1.15s cubic-bezier(.25,.6,.25,1),
+    transform 1.25s cubic-bezier(.2,.7,.2,1);
+  will-change:opacity, filter, transform;
+}
+.line.in{opacity:1; filter:blur(0); transform:translateY(0)}
+.line.out{opacity:0; filter:blur(10px); transform:translateY(-14px)}
+
+/* ---------- tipografías ---------- */
+.kicker{
+  font-family:var(--mono);
+  font-weight:300;
+  font-size:clamp(9px,2.3vw,11px);
+  letter-spacing:.42em;
+  text-transform:uppercase;
+  color:var(--cold);
+}
+.expno{
+  font-family:var(--mono);
+  font-weight:400;
+  font-size:clamp(11px,3vw,14px);
+  letter-spacing:.38em;
+  color:rgba(255,213,74,.85);
+  margin-top:clamp(14px,3vw,20px);
+}
+.title{
+  font-weight:300;
+  font-size:clamp(25px,6.4vw,50px);
+  line-height:1.18;
+  letter-spacing:.005em;
+  margin-top:clamp(16px,3.4vw,26px);
+  text-wrap:balance;
+}
+.hyp{
+  font-style:italic;
+  font-weight:300;
+  font-size:clamp(14px,3.4vw,19px);
+  color:var(--soft);
+  margin-top:clamp(14px,3vw,22px);
+}
+
+/* ---------- botón ---------- */
+.btnwrap{margin-top:clamp(30px,6vw,46px)}
+#start{
+  pointer-events:auto;
+  font-family:var(--mono);
+  font-weight:400;
+  font-size:clamp(10px,2.6vw,12px);
+  letter-spacing:.3em;
+  color:#fff3cf;
+  background:rgba(255,213,74,.05);
+  border:1px solid rgba(255,213,74,.34);
+  padding:15px 26px;
+  border-radius:2px;
+  cursor:pointer;
+  position:relative;
+  transition:background .5s ease, border-color .5s ease, color .5s ease, box-shadow .5s ease, transform .5s ease;
+  box-shadow:0 0 26px rgba(255,190,50,.12), inset 0 0 22px rgba(255,190,50,.05);
+  animation:breathe 4.6s ease-in-out infinite;
+}
+#start:hover, #start:focus-visible{
+  background:rgba(255,213,74,.11);
+  border-color:rgba(255,213,74,.7);
+  box-shadow:0 0 46px rgba(255,190,50,.3), inset 0 0 28px rgba(255,190,50,.1);
+  transform:translateY(-1px);
+  outline:none;
+}
+#start:active{transform:translateY(0) scale(.985)}
+@keyframes breathe{
+  0%,100%{box-shadow:0 0 22px rgba(255,190,50,.1), inset 0 0 20px rgba(255,190,50,.04)}
+  50%    {box-shadow:0 0 42px rgba(255,190,50,.26), inset 0 0 26px rgba(255,190,50,.09)}
+}
+
+/* ---------- panel laboratorio ---------- */
+#labStatus{min-height:1.4em}
+.logbox{
+  margin:clamp(20px,4.4vw,30px) auto 0;
+  width:min(420px,88vw);
+  text-align:left;
+  min-height:clamp(120px,26vw,150px);
+}
+.logline{
+  font-family:var(--mono);
+  font-weight:300;
+  font-size:clamp(10px,2.6vw,12px);
+  letter-spacing:.06em;
+  color:rgba(255,246,220,.5);
+  padding:3px 0;
+}
+.logline .n{color:rgba(255,213,74,.75)}
+.bar{
+  margin:clamp(16px,3.4vw,24px) auto 0;
+  width:min(420px,88vw);
+  height:1px;
+  background:rgba(255,246,220,.13);
+  position:relative;
+  overflow:hidden;
+}
+.bar span{
+  position:absolute; left:0; top:0; bottom:0; width:0%;
+  background:linear-gradient(90deg, rgba(255,213,74,.25), rgba(255,213,74,.95));
+  transition:width .85s cubic-bezier(.3,.7,.3,1);
+  box-shadow:0 0 12px rgba(255,200,70,.6);
+}
+.pct{
+  font-family:var(--mono); font-weight:300;
+  font-size:clamp(10px,2.6vw,12px);
+  letter-spacing:.26em;
+  color:rgba(255,213,74,.8);
+  margin-top:10px;
+}
+
+/* ---------- descubrimiento ---------- */
+.res-label{
+  font-family:var(--mono); font-weight:300;
+  font-size:clamp(9px,2.3vw,11px);
+  letter-spacing:.42em; text-transform:uppercase;
+  color:var(--cold);
+}
+.res-main{
+  font-weight:300;
+  font-size:clamp(24px,6.2vw,46px);
+  line-height:1.2;
+  margin-top:clamp(18px,3.6vw,26px);
+  color:#fff7e0;
+  text-shadow:0 0 42px rgba(255,200,70,.35);
+}
+.res-sub{
+  font-style:italic; font-weight:300;
+  font-size:clamp(15px,3.6vw,21px);
+  color:rgba(255,213,74,.82);
+  margin-top:clamp(16px,3.2vw,24px);
+}
+
+/* ---------- bloque emotivo ---------- */
+.emo{
+  font-weight:300;
+  font-size:clamp(22px,5.6vw,40px);
+  line-height:1.32;
+  text-wrap:balance;
+  text-shadow:0 0 50px rgba(255,200,70,.2);
+}
+.emo.small{font-size:clamp(18px,4.4vw,30px); color:rgba(255,246,220,.86)}
+.emo.hero{
+  font-size:clamp(26px,6.6vw,52px);
+  color:#fff8e4;
+  text-shadow:0 0 60px rgba(255,205,80,.45);
+}
+.final-msg{
+  font-style:italic; font-weight:300;
+  font-size:clamp(21px,5.2vw,38px);
+  line-height:1.34;
+  text-wrap:balance;
+}
+.thanks{
+  font-family:var(--mono); font-weight:300;
+  font-size:clamp(10px,2.7vw,13px);
+  letter-spacing:.18em;
+  line-height:1.9;
+  color:rgba(255,246,220,.55);
+  margin-top:clamp(22px,4.6vw,34px);
+}
+
+/* ---------- tarjeta final ---------- */
+.card-no{
+  font-family:var(--mono); font-weight:400;
+  font-size:clamp(12px,3.2vw,16px);
+  letter-spacing:.4em;
+  color:rgba(255,213,74,.9);
+}
+.card-res{
+  font-weight:300;
+  font-size:clamp(22px,5.4vw,38px);
+  margin-top:clamp(14px,3vw,22px);
+}
+.card-for{
+  font-style:italic; font-weight:300;
+  font-size:clamp(18px,4.6vw,30px);
+  color:rgba(255,246,220,.9);
+  margin-top:clamp(12px,2.6vw,18px);
+}
+.rule{
+  width:56px; height:1px; margin:clamp(20px,4vw,28px) auto;
+  background:linear-gradient(90deg, transparent, rgba(255,213,74,.6), transparent);
+}
+
+/* ---------- pie interactivo ---------- */
+#hint{
+  position:fixed; left:50%; bottom:max(18px, env(safe-area-inset-bottom));
+  transform:translateX(-50%);
+  z-index:2; pointer-events:none;
+  width:min(520px,92vw); text-align:center;
+  font-family:var(--mono); font-weight:300;
+  font-size:clamp(9px,2.3vw,11px);
+  letter-spacing:.24em;
+  line-height:2.1;
+  color:rgba(255,246,220,.34);
+  opacity:0;
+  transition:opacity 2s ease;
+}
+#hint.on{opacity:1}
+#hint em{font-style:normal; color:rgba(255,213,74,.55)}
+
+@media (max-height:560px){
+  .logbox{min-height:96px}
+  .title{font-size:clamp(22px,5.4vw,34px)}
+}
+
+@media (prefers-reduced-motion: reduce){
+  #start{animation:none}
+  .line{transition-duration:.7s}
+}
+</style>
+</head>
+<body>
+
+<div id="glow"></div>
+<canvas id="scene"></canvas>
+<div id="flash"></div>
+
+<div id="stage">
+
+  <!-- 1. PANTALLA INICIAL -->
+  <section class="panel on" id="intro">
+    <p class="kicker line" data-d="0">Laboratorio de Ciencias</p>
+    <p class="expno line" data-d="600" id="introNo">EXPERIMENTO #001</p>
+    <h1 class="title line" data-d="1200" id="introTitle"></h1>
+    <p class="hyp line" data-d="2000" id="introHyp"></p>
+    <div class="btnwrap line" data-d="2900">
+      <button id="start" type="button">INICIAR EXPERIMENTO</button>
+    </div>
+  </section>
+
+  <!-- 2. LABORATORIO -->
+  <section class="panel" id="lab">
+    <p class="kicker line" id="labStatus"></p>
+    <div class="logbox"><div id="log"></div></div>
+    <div class="bar"><span id="barfill"></span></div>
+    <p class="pct" id="pct">0%</p>
+  </section>
+
+  <!-- 3. DESCUBRIMIENTO -->
+  <section class="panel" id="discovery">
+    <p class="res-label line" id="dLabel">Resultado del experimento</p>
+    <p class="res-main line" id="dMain"></p>
+    <p class="res-sub line" id="dSub">Hipótesis confirmada.</p>
+  </section>
+
+  <!-- 5. TRANSICIÓN EMOTIVA -->
+  <section class="panel" id="emotion"></section>
+
+  <!-- 6. MENSAJE FINAL -->
+  <section class="panel" id="closing">
+    <p class="final-msg line" id="cFinal"></p>
+    <p class="thanks line" id="cThanks"></p>
+  </section>
+
+  <!-- FINAL -->
+  <section class="panel" id="card">
+    <p class="card-no line" id="fNo"></p>
+    <div class="rule line" data-d="200"></div>
+    <p class="card-res line" id="fRes"></p>
+    <p class="card-for line" id="fFor"></p>
+  </section>
+
+</div>
+
+<p id="hint">Experimento completado.<br><em>Pero puede seguir haciendo florecer el resultado.</em></p>
+
+<script>
+"use strict";
+
+/* ============================================================
+   CONFIGURACIÓN — todo lo editable está acá arriba
+   ============================================================ */
+const CONFIG = {
+  teacherTitle:  "Profesora",
+  teacherName:   "Victoria",
+  experimentNumber: "001",
+
+  title: "¿Cómo regalar flores que no se marchitan?",
+  hypothesis: "Hipótesis: quizás la ciencia tenga una respuesta.",
+
+  discoveryMessage: "Flores amarillas detectadas.",
+  confirmMessage:   "Hipótesis confirmada.",
+
+  emotionalLines: [
+    "Hay descubrimientos que no se encuentran en los libros.",
+    "Así que decidí hacer algo al respecto."
+  ],
+  mainMessage:  "Estas son para usted.",
+
+  finalMessage:    "Porque hasta la ciencia necesita un poco de primavera.",
+  thankYouMessage: "Gracias por enseñarnos a mirar el mundo con curiosidad.",
+
+  resultLine: "Resultado: Flores amarillas.",
+
+  flowerCount:   80,
+  particleCount: 180
+};
+
+const ENABLE_AUDIO = false;   // dejalo en false; el hook está al final del archivo
+
+/* Pasos del "experimento": log técnico + estado grande */
+const STEPS = [
+  { log:"[01] Inicializando laboratorio...", st:"Iniciando experimento..." },
+  { log:"[02] Analizando variables...",      st:"Analizando variables..." },
+  { log:"[03] Detectando pigmentos...",      st:"Buscando solución..." },
+  { log:"[04] Procesando polen...",          st:"Buscando solución..." },
+  { log:"[05] Generando respuesta...",       st:"Generando respuesta..." },
+  { log:"[06] Resultado encontrado.",        st:"Resultado inesperado detectado." }
+];
+
+/* ============================================================
+   UTILIDADES
+   ============================================================ */
+const TAU = Math.PI * 2;
+const rnd  = (a, b) => a + Math.random() * (b - a);
+const pick = arr => arr[(Math.random() * arr.length) | 0];
+const clamp = (v, a, b) => v < a ? a : (v > b ? b : v);
+const easeInOut = t => t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
+
+const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const SPEED   = REDUCED ? 0.55 : 1;              // acorta toda la narrativa
+const MOTION  = REDUCED ? 0.45 : 1;              // amortigua velocidades
+
+const sleep = ms => new Promise(r => setTimeout(r, ms * SPEED));
+const nextFrame = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+/* ============================================================
+   CANVAS
+   ============================================================ */
+const cv  = document.getElementById('scene');
+const ctx = cv.getContext('2d', { alpha:true });
+
+let W = 0, H = 0, DPR = 1, QTY = 1, SIZESCALE = 1, MAX_FLOWERS = 140;
+let netReady = false, glyphsReady = false;   // evitan tocar estructuras aún no declaradas
+
+function resize(){
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = window.innerWidth;
+  H = window.innerHeight;
+  cv.width  = Math.round(W * DPR);
+  cv.height = Math.round(H * DPR);
+  cv.style.width  = W + 'px';
+  cv.style.height = H + 'px';
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+  QTY = W < 700 ? 0.55 : (W < 1100 ? 0.82 : 1);
+  if (REDUCED) QTY *= 0.5;
+  SIZESCALE   = clamp((W + H) / 1900, 0.68, 1.15);
+  MAX_FLOWERS = W < 700 ? 70 : 150;
+
+  if (netReady && NET.active) buildNetTargets();
+  if (glyphsReady) initGlyphs();
+}
+window.addEventListener('resize', resize, { passive:true });
+window.addEventListener('orientationchange', () => setTimeout(resize, 120));
+resize();
+
+/* ============================================================
+   SPRITES  — se dibujan UNA vez y después sólo se hace drawImage.
+   Esto es lo que permite tener 200+ flores sin matar el celular.
+   ============================================================ */
+const PALETTES = [
+  { inner:'#fff8dd', mid:'#ffe07a', outer:'#f7b733' },
+  { inner:'#fffbe8', mid:'#ffd95e', outer:'#f2a81b' },
+  { inner:'#fff3c0', mid:'#f9cb43', outer:'#e89c16' },
+  { inner:'#fffdf4', mid:'#ffeaa8', outer:'#f0c05a' }
+];
+
+function petalPath(g, w, R){
+  g.beginPath();
+  g.moveTo(0, 0);
+  g.bezierCurveTo( w, -R*0.30,  w*0.76, -R*0.93, 0, -R);
+  g.bezierCurveTo(-w*0.76, -R*0.93, -w, -R*0.30, 0, 0);
+  g.closePath();
+}
+
+function makeFlowerSprite(size, petals, pal){
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const g = c.getContext('2d');
+  g.translate(size/2, size/2);
+
+  const R = size * 0.43, w = size * 0.118;
+
+  g.shadowColor = 'rgba(255,190,60,.5)';
+  g.shadowBlur  = size * 0.07;
+
+  for (let i = 0; i < petals; i++){
+    g.save();
+    g.rotate((i / petals) * TAU + (i % 2 ? 0.035 : -0.028));
+    const grd = g.createLinearGradient(0, 0, 0, -R);
+    grd.addColorStop(0,   pal.inner);
+    grd.addColorStop(.52, pal.mid);
+    grd.addColorStop(1,   pal.outer);
+    g.fillStyle = grd;
+    petalPath(g, w, R);
+    g.fill();
+    g.restore();
+  }
+  g.shadowBlur = 0;
+
+  // corazón de la flor
+  const cg = g.createRadialGradient(0, 0, 0, 0, 0, size * 0.135);
+  cg.addColorStop(0,   '#fff9e3');
+  cg.addColorStop(.42, '#f7ae23');
+  cg.addColorStop(1,   'rgba(150,84,4,.92)');
+  g.fillStyle = cg;
+  g.beginPath(); g.arc(0, 0, size * 0.128, 0, TAU); g.fill();
+
+  // polen
+  g.fillStyle = 'rgba(255,250,222,.75)';
+  for (let i = 0; i < 9; i++){
+    const a = Math.random() * TAU, r = Math.random() * size * 0.09;
+    g.beginPath();
+    g.arc(Math.cos(a)*r, Math.sin(a)*r, size * 0.011, 0, TAU);
+    g.fill();
+  }
+  return c;
+}
+
+function makePetalSprite(size, pal){
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const g = c.getContext('2d');
+  g.translate(size/2, size*0.92);
+  const R = size * 0.82, w = size * 0.27;
+  const grd = g.createLinearGradient(0, 0, 0, -R);
+  grd.addColorStop(0,   pal.outer);
+  grd.addColorStop(.55, pal.mid);
+  grd.addColorStop(1,   pal.inner);
+  g.fillStyle = grd;
+  g.shadowColor = 'rgba(255,190,60,.45)';
+  g.shadowBlur  = size * 0.16;
+  petalPath(g, w, R);
+  g.fill();
+  return c;
+}
+
+function makeDotSprite(rgb){
+  const s = 64;
+  const c = document.createElement('canvas');
+  c.width = c.height = s;
+  const g = c.getContext('2d');
+  const grd = g.createRadialGradient(s/2, s/2, 0, s/2, s/2, s/2);
+  grd.addColorStop(0,   'rgba(' + rgb + ',1)');
+  grd.addColorStop(.28, 'rgba(' + rgb + ',.55)');
+  grd.addColorStop(1,   'rgba(' + rgb + ',0)');
+  g.fillStyle = grd;
+  g.fillRect(0, 0, s, s);
+  return c;
+}
+
+const FLOWER_SPRITES = [];
+const PETAL_SPRITES  = [];
+for (const pal of PALETTES){
+  for (const p of [5, 6, 8]) FLOWER_SPRITES.push(makeFlowerSprite(140, p, pal));
+  PETAL_SPRITES.push(makePetalSprite(44, pal));
+}
+const DOT_COLD = makeDotSprite('186,214,255');
+const DOT_GOLD = makeDotSprite('255,206,92');
+
+/* ============================================================
+   ENTIDADES
+   ============================================================ */
+const particles = [];
+const flowers   = [];
+const petals    = [];
+const rings     = [];
+
+let goldMix   = 0;   // 0 = laboratorio frío · 1 = todo dorado
+let linkAlpha = 0;   // líneas entre partículas (fase científica)
+let hudAlpha  = 0;   // arcos e instrumental del centro
+let glyphAlpha= 0;   // fórmulas sutiles
+let interactive = false;
+
+/* ---- partículas ---- */
+function makeParticle(scatter){
+  return {
+    x: Math.random() * W,
+    y: scatter ? Math.random() * H : rnd(-40, H + 40),
+    r: rnd(0.6, 2.3),
+    a: rnd(0.12, 0.6),
+    vx: rnd(-0.12, 0.12),
+    vy: rnd(-0.16, -0.02),
+    tw: Math.random() * TAU,
+    tws: rnd(0.006, 0.02),
+    gold: false
+  };
+}
+function initParticles(){
+  particles.length = 0;
+  const n = Math.round(CONFIG.particleCount * QTY);
+  for (let i = 0; i < n; i++) particles.push(makeParticle(true));
+}
+initParticles();
+
+function burstParticles(x, y, n, power){
+  for (let i = 0; i < n; i++){
+    const a = Math.random() * TAU, s = rnd(0.6, power) * MOTION;
+    particles.push({
+      x, y,
+      r: rnd(0.7, 2.6),
+      a: rnd(.35, .95),
+      vx: Math.cos(a) * s,
+      vy: Math.sin(a) * s,
+      tw: Math.random() * TAU, tws: rnd(.01, .03),
+      gold: true, decay: rnd(.004, .012)
+    });
+  }
+  // recorte para no acumular infinito
+  const cap = Math.round(CONFIG.particleCount * QTY) + 260;
+  if (particles.length > cap) particles.splice(0, particles.length - cap);
+}
+
+function updateParticles(){
+  for (let i = particles.length - 1; i >= 0; i--){
+    const p = particles[i];
+    p.x += p.vx; p.y += p.vy;
+    p.vx *= 0.995; p.vy *= 0.995;
+    p.tw += p.tws;
+    if (p.decay){
+      p.a -= p.decay;
+      if (p.a <= 0.01){ particles.splice(i, 1); continue; }
+    } else {
+      // reciclaje suave por los bordes
+      if (p.y < -30) { p.y = H + 20; p.x = Math.random() * W; }
+      if (p.y > H + 30){ p.y = -20;  p.x = Math.random() * W; }
+      if (p.x < -30) p.x = W + 20;
+      if (p.x > W + 30) p.x = -20;
+    }
+  }
+}
+
+function drawParticles(){
+  ctx.globalCompositeOperation = 'lighter';
+  for (const p of particles){
+    const tw = 0.62 + 0.38 * Math.sin(p.tw);
+    ctx.globalAlpha = clamp(p.a * tw, 0, 1);
+    const s = p.r * 9;
+    const spr = (p.gold || goldMix > 0.55) ? DOT_GOLD : DOT_COLD;
+    ctx.drawImage(spr, p.x - s/2, p.y - s/2, s, s);
+  }
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+/* ---- enlaces entre partículas (fase científica) ---- */
+function drawLinks(){
+  if (linkAlpha < 0.01) return;
+  const n = Math.min(particles.length, 62);
+  const D = 118, D2 = D * D;
+  ctx.lineWidth = 1;
+  ctx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < n; i++){
+    const a = particles[i];
+    for (let j = i + 1; j < n; j++){
+      const b = particles[j];
+      const dx = a.x - b.x, dy = a.y - b.y;
+      const d2 = dx*dx + dy*dy;
+      if (d2 > D2) continue;
+      const k = (1 - Math.sqrt(d2) / D) * 0.16 * linkAlpha;
+      ctx.strokeStyle = goldMix > .5
+        ? 'rgba(255,205,90,' + k + ')'
+        : 'rgba(160,200,255,' + k + ')';
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+    }
+  }
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+/* ---- HUD de laboratorio (arcos, ticks, triángulos) ---- */
+let hudRot = 0;
+function drawHud(){
+  if (hudAlpha < 0.01) return;
+  const cx = W/2, cy = H/2;
+  const R = Math.min(W, H) * 0.30;
+  hudRot += 0.0016;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.lineWidth = 1;
+
+  // arcos concéntricos
+  for (let k = 0; k < 3; k++){
+    const r = R * (0.62 + k * 0.22);
+    const dir = k % 2 ? -1 : 1;
+    ctx.strokeStyle = 'rgba(175,210,255,' + (0.14 * hudAlpha) + ')';
+    ctx.beginPath();
+    ctx.arc(0, 0, r, hudRot * dir * (1 + k * .4), hudRot * dir * (1 + k * .4) + TAU * 0.42);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,208,90,' + (0.1 * hudAlpha) + ')';
+    ctx.beginPath();
+    ctx.arc(0, 0, r, hudRot * dir * (1 + k * .4) + Math.PI, hudRot * dir * (1 + k * .4) + Math.PI + TAU * 0.16);
+    ctx.stroke();
+  }
+
+  // ticks
+  ctx.strokeStyle = 'rgba(255,246,220,' + (0.16 * hudAlpha) + ')';
+  for (let i = 0; i < 48; i++){
+    const a = (i / 48) * TAU + hudRot * 0.6;
+    const r0 = R * 1.06, r1 = R * (i % 6 === 0 ? 1.12 : 1.09);
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(a) * r0, Math.sin(a) * r0);
+    ctx.lineTo(Math.cos(a) * r1, Math.sin(a) * r1);
+    ctx.stroke();
+  }
+
+  // triángulo geométrico lento
+  ctx.strokeStyle = 'rgba(255,208,90,' + (0.09 * hudAlpha) + ')';
+  ctx.beginPath();
+  for (let i = 0; i <= 3; i++){
+    const a = (i / 3) * TAU - hudRot * 1.3;
+    const x = Math.cos(a) * R * 0.45, y = Math.sin(a) * R * 0.45;
+    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+  }
+  ctx.closePath();
+  ctx.stroke();
+
+  ctx.restore();
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+/* ---- glifos / fórmulas muy sutiles ---- */
+const GLYPHS = ['C₆H₁₂O₆', 'hν', 'λ', '∑', 'CO₂', '≈', 'Δ', 'H₂O'];
+const glyphNodes = [];
+function initGlyphs(){
+  glyphNodes.length = 0;
+  const n = W < 700 ? 5 : 8;
+  for (let i = 0; i < n; i++){
+    glyphNodes.push({
+      t: pick(GLYPHS),
+      x: rnd(W * .08, W * .92),
+      y: rnd(H * .12, H * .88),
+      vx: rnd(-.08, .08), vy: rnd(-.06, .06),
+      s: rnd(10, 15)
+    });
+  }
+  glyphsReady = true;
+}
+function drawGlyphs(){
+  if (glyphAlpha < 0.01) return;
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.textAlign = 'center';
+  for (const g of glyphNodes){
+    g.x += g.vx; g.y += g.vy;
+    if (g.x < 0) g.x = W; if (g.x > W) g.x = 0;
+    if (g.y < 0) g.y = H; if (g.y > H) g.y = 0;
+    ctx.font = '300 ' + g.s + 'px "IBM Plex Mono", monospace';
+    ctx.fillStyle = 'rgba(190,215,255,' + (0.14 * glyphAlpha) + ')';
+    ctx.fillText(g.t, g.x, g.y);
+  }
+  ctx.restore();
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+/* ---- flores ---- */
+function spawnFlower(x, y, o){
+  o = o || {};
+  const size = (o.size != null ? o.size : rnd(30, 96)) * SIZESCALE;
+  flowers.push({
+    x, y,
+    vx: (o.vx || 0) * MOTION,
+    vy: (o.vy || 0) * MOTION,
+    drift: (o.drift != null ? o.drift : (size / 120) * rnd(0.18, 0.42)) * MOTION,
+    rot: Math.random() * TAU,
+    vr: rnd(-0.009, 0.009) * MOTION,
+    size,
+    sc: 0,                                   // escala animada 0 → 1
+    a: 0,
+    at: o.alpha != null ? o.alpha : rnd(0.78, 1),
+    sway: Math.random() * TAU,
+    swayA: rnd(0.12, 0.5) * MOTION,
+    spr: pick(FLOWER_SPRITES)
+  });
+  if (flowers.length > MAX_FLOWERS) flowers.shift();
+}
+
+function updateFlowers(){
+  for (const f of flowers){
+    f.sc += (1 - f.sc) * 0.075;
+    f.a  += (f.at - f.a) * 0.055;
+    f.vx *= 0.955; f.vy *= 0.955;
+    f.sway += 0.009;
+    f.x += f.vx + Math.sin(f.sway) * f.swayA * 0.5;
+    f.y += f.vy + f.drift;
+    f.rot += f.vr;
+
+    // reciclado infinito: nunca se vacía la pantalla
+    if (f.y - f.size > H){ f.y = -f.size; f.x = Math.random() * W; }
+    if (f.x < -f.size)      f.x = W + f.size;
+    else if (f.x > W + f.size) f.x = -f.size;
+  }
+}
+
+function drawFlowers(){
+  // dos pasadas → sensación de profundidad (lejanas primero)
+  for (let pass = 0; pass < 2; pass++){
+    for (const f of flowers){
+      const far = f.size < 48 * SIZESCALE;
+      if ((pass === 0) !== far) continue;
+      const s = f.size * f.sc;
+      if (s < 1) continue;
+      ctx.save();
+      ctx.globalAlpha = clamp(f.a, 0, 1);
+      ctx.translate(f.x, f.y);
+      ctx.rotate(f.rot);
+      ctx.drawImage(f.spr, -s/2, -s/2, s, s);
+      ctx.restore();
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+
+/* ---- pétalos sueltos ---- */
+function spawnPetal(x, y, power){
+  const a = Math.random() * TAU, sp = rnd(1, power) * MOTION;
+  petals.push({
+    x, y,
+    vx: Math.cos(a) * sp,
+    vy: Math.sin(a) * sp,
+    size: rnd(9, 26) * SIZESCALE,
+    rot: Math.random() * TAU,
+    vr: rnd(-0.05, 0.05) * MOTION,
+    flut: Math.random() * TAU,
+    a: rnd(.6, 1),
+    drift: rnd(0.25, 0.75) * MOTION,
+    spr: pick(PETAL_SPRITES)
+  });
+  if (petals.length > (W < 700 ? 110 : 220)) petals.shift();
+}
+
+function updatePetals(){
+  for (let i = petals.length - 1; i >= 0; i--){
+    const p = petals[i];
+    p.vx *= 0.96; p.vy *= 0.96;
+    p.flut += 0.05;
+    p.x += p.vx + Math.sin(p.flut) * 0.55 * MOTION;
+    p.y += p.vy + p.drift;
+    p.rot += p.vr + Math.sin(p.flut) * 0.01;
+    if (p.y - p.size > H){
+      p.y = -p.size; p.x = Math.random() * W; p.vx = 0; p.vy = 0;
+    }
+  }
+}
+
+function drawPetals(){
+  for (const p of petals){
+    ctx.save();
+    ctx.globalAlpha = p.a;
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rot);
+    ctx.drawImage(p.spr, -p.size/2, -p.size/2, p.size, p.size);
+    ctx.restore();
+  }
+  ctx.globalAlpha = 1;
+}
+
+/* ---- ondas de luz (clics) ---- */
+function spawnRing(x, y){
+  rings.push({ x, y, r: 4, max: rnd(110, 190) * SIZESCALE, a: 0.42 });
+}
+function updateRings(){
+  for (let i = rings.length - 1; i >= 0; i--){
+    const r = rings[i];
+    r.r += (r.max - r.r) * 0.075;
+    r.a *= 0.938;
+    if (r.a < 0.015) rings.splice(i, 1);
+  }
+}
+function drawRings(){
+  if (!rings.length) return;
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.lineWidth = 1.2;
+  for (const r of rings){
+    ctx.strokeStyle = 'rgba(255,214,110,' + r.a + ')';
+    ctx.beginPath(); ctx.arc(r.x, r.y, r.r, 0, TAU); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,246,220,' + (r.a * .4) + ')';
+    ctx.beginPath(); ctx.arc(r.x, r.y, r.r * .72, 0, TAU); ctx.stroke();
+  }
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+/* ============================================================
+   ESTRUCTURA FINAL — molécula → hélice → flor → disolución
+   ============================================================ */
+const NET = { active:false, nodes:[], t:0, phase:0, dissolve:0, alpha:0 };
+
+function buildNetTargets(){
+  const cx = W/2, cy = H/2;
+  const R = Math.min(W, H) * 0.27;
+  const n = NET.nodes.length;
+  for (let i = 0; i < n; i++){
+    const nd = NET.nodes[i];
+    // hélice / molécula
+    const u = i / (n - 1);
+    const ang = u * TAU * 1.9 + (i % 2 ? 0 : Math.PI);
+    nd.hx = cx + Math.cos(ang) * R * 0.52;
+    nd.hy = cy + (u - 0.5) * R * 1.75;
+    // curva rosa de 5 pétalos
+    const th = (i / n) * TAU;
+    const rr = R * (0.2 + 0.8 * Math.abs(Math.cos(2.5 * th)));
+    nd.fx = cx + Math.cos(th) * rr;
+    nd.fy = cy + Math.sin(th) * rr;
+  }
+}
+
+function initNet(){
+  const n = REDUCED ? 26 : (W < 700 ? 32 : 44);
+  NET.nodes = [];
+  for (let i = 0; i < n; i++){
+    NET.nodes.push({
+      x: W/2 + rnd(-W * .42, W * .42),
+      y: H/2 + rnd(-H * .34, H * .34),
+      dx: 0, dy: 0,
+      hx:0, hy:0, fx:0, fy:0
+    });
+  }
+  netReady = true;
+  buildNetTargets();
+  NET.t = 0; NET.phase = 0; NET.dissolve = 0; NET.alpha = 0; NET.active = true;
+}
+
+function updateNet(){
+  if (!NET.active) return;
+  NET.alpha += ((NET.dissolve ? 0 : 1) - NET.alpha) * 0.03;
+
+  if (NET.dissolve){
+    NET.dissolve += 0.01;
+    for (const nd of NET.nodes){
+      nd.x += nd.dx; nd.y += nd.dy;
+      nd.dx *= 0.99; nd.dy *= 0.99;
+    }
+    if (Math.random() < 0.5){
+      const nd = pick(NET.nodes);
+      burstParticles(nd.x, nd.y, 1, 0.5);
+    }
+    if (NET.dissolve > 1.6) NET.active = false;
+    return;
+  }
+
+  NET.t += 0.0055 * SPEED;
+  if (NET.t >= 1){ NET.t = 0; NET.phase = Math.min(NET.phase + 1, 2); }
+
+  const e = easeInOut(clamp(NET.t, 0, 1));
+  for (const nd of NET.nodes){
+    let tx, ty;
+    if (NET.phase === 0){ tx = nd.hx; ty = nd.hy; }                 // → molécula/hélice
+    else                { tx = nd.fx; ty = nd.fy; }                 // → flor
+    const k = NET.phase === 0 ? 0.035 * e + 0.01 : 0.045 * e + 0.012;
+    nd.x += (tx - nd.x) * k;
+    nd.y += (ty - nd.y) * k;
+  }
+}
+
+function dissolveNet(){
+  if (!NET.active) return;
+  NET.dissolve = 0.001;
+  for (const nd of NET.nodes){
+    const a = Math.atan2(nd.y - H/2, nd.x - W/2);
+    nd.dx = Math.cos(a) * rnd(.4, 1.5) * MOTION;
+    nd.dy = Math.sin(a) * rnd(.4, 1.5) * MOTION;
+  }
+}
+
+function drawNet(){
+  if (!NET.active || NET.alpha < 0.01) return;
+  const nodes = NET.nodes, n = nodes.length;
+  const fade = NET.dissolve ? clamp(1 - NET.dissolve, 0, 1) : NET.alpha;
+
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < n; i++){
+    for (const step of [1, 2]){
+      const a = nodes[i], b = nodes[(i + step) % n];
+      const d = Math.hypot(a.x - b.x, a.y - b.y);
+      const k = clamp(1 - d / (Math.min(W, H) * 0.34), 0, 1) * 0.42 * fade;
+      if (k < 0.01) continue;
+      ctx.strokeStyle = 'rgba(255,212,100,' + k + ')';
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    }
+  }
+  for (const nd of nodes){
+    ctx.globalAlpha = 0.85 * fade;
+    ctx.drawImage(DOT_GOLD, nd.x - 9, nd.y - 9, 18, 18);
+  }
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+/* ============================================================
+   LOOP PRINCIPAL
+   ============================================================ */
+function frame(){
+  ctx.clearRect(0, 0, W, H);
+
+  updateParticles();
+  updateRings();
+  updatePetals();
+  updateFlowers();
+  updateNet();
+
+  drawGlyphs();
+  drawLinks();
+  drawHud();
+  drawParticles();
+  drawNet();
+  drawRings();
+  drawPetals();
+  drawFlowers();
+
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+/* ============================================================
+   DOM — helpers de texto
+   ============================================================ */
+const $ = sel => document.querySelector(sel);
+const panels = {
+  intro:     $('#intro'),
+  lab:       $('#lab'),
+  discovery: $('#discovery'),
+  emotion:   $('#emotion'),
+  closing:   $('#closing'),
+  card:      $('#card')
+};
+
+function showPanel(name){
+  for (const k in panels) panels[k].classList.toggle('on', k === name);
+}
+async function reveal(el, delay){
+  if (delay) await sleep(delay);
+  await nextFrame();
+  el.classList.add('in');
+}
+async function hidePanel(name, wait){
+  const p = panels[name];
+  p.querySelectorAll('.line').forEach(el => { el.classList.remove('in'); el.classList.add('out'); });
+  await sleep(wait == null ? 1100 : wait);
+  p.classList.remove('on');
+}
+function newLine(text, cls){
+  const el = document.createElement('p');
+  el.className = 'line ' + (cls || '');
+  el.innerHTML = text;
+  return el;
+}
+
+/* ---- textos desde CONFIG ---- */
+const FULLNAME = CONFIG.teacherTitle + (CONFIG.teacherName ? ' ' + CONFIG.teacherName : '');
+$('#introNo').textContent   = 'EXPERIMENTO #' + CONFIG.experimentNumber;
+$('#introTitle').textContent= CONFIG.title;
+$('#introHyp').textContent  = CONFIG.hypothesis;
+$('#dMain').textContent     = CONFIG.discoveryMessage.toUpperCase();
+$('#dSub').textContent      = CONFIG.confirmMessage;
+$('#cFinal').textContent    = CONFIG.finalMessage;
+$('#cThanks').textContent   = CONFIG.thankYouMessage;
+$('#fNo').textContent       = 'EXPERIMENTO #' + CONFIG.experimentNumber;
+$('#fRes').textContent      = CONFIG.resultLine;
+$('#fFor').textContent      = 'Para usted, ' + FULLNAME + '. 🌼';
+document.title = 'Experimento #' + CONFIG.experimentNumber + ' — Para ' + FULLNAME;
+
+/* ---- entrada escalonada de la pantalla inicial ---- */
+initGlyphs();
+panels.intro.querySelectorAll('.line').forEach(el => {
+  const d = Number(el.dataset.d || 0);
+  setTimeout(() => el.classList.add('in'), 260 + d * SPEED);
+});
+
+/* ============================================================
+   SECUENCIA NARRATIVA
+   ============================================================ */
+const flash = $('#flash');
+function doFlash(strength){
+  flash.style.transition = 'opacity .16s ease';
+  flash.style.opacity = String(strength);
+  setTimeout(() => {
+    flash.style.transition = 'opacity 1.6s ease';
+    flash.style.opacity = '0';
+  }, 170);
+}
+
+/* Interpola una variable global de escena: 'hud' | 'link' | 'glyph' | 'gold' */
+function fadeTo(target, prop, dur){
+  return new Promise(res => {
+    const t0 = performance.now();
+    const from = prop === 'hud' ? hudAlpha : prop === 'link' ? linkAlpha : prop === 'glyph' ? glyphAlpha : goldMix;
+    function step(now){
+      const k = clamp((now - t0) / dur, 0, 1);
+      const v = from + (target - from) * easeInOut(k);
+      if (prop === 'hud') hudAlpha = v;
+      else if (prop === 'link') linkAlpha = v;
+      else if (prop === 'glyph') glyphAlpha = v;
+      else goldMix = v;
+      k < 1 ? requestAnimationFrame(step) : res();
+    }
+    requestAnimationFrame(step);
+  });
+}
+
+/* --- 2. EL EXPERIMENTO --- */
+async function runLab(){
+  showPanel('lab');
+  const status = $('#labStatus'), log = $('#log'), bar = $('#barfill'), pct = $('#pct');
+  log.innerHTML = '';
+  reveal(status, 0);
+  fadeTo(1, 'hud',   2200);
+  fadeTo(1, 'link',  2600);
+  fadeTo(1, 'glyph', 2400);
+
+  for (let i = 0; i < STEPS.length; i++){
+    const s = STEPS[i];
+    if (status.textContent !== s.st){
+      status.classList.remove('in');
+      await sleep(260);
+      status.textContent = s.st;
+      await nextFrame();
+      status.classList.add('in');
+    }
+    const li = document.createElement('div');
+    li.className = 'logline line';
+    li.innerHTML = '<span class="n">' + s.log.slice(0, 4) + '</span>' + s.log.slice(4);
+    log.appendChild(li);
+    await nextFrame();
+    li.classList.add('in');
+
+    const p = Math.round(((i + 1) / STEPS.length) * 100);
+    bar.style.width = p + '%';
+    pct.textContent = p + '%';
+
+    // pequeño pulso de partículas en cada paso
+    burstParticles(W/2 + rnd(-W*.2, W*.2), H/2 + rnd(-H*.2, H*.2), 6, 1.4);
+    await sleep(980);
+  }
+
+  pct.textContent = '100%';
+  await sleep(1100);
+  await hidePanel('lab', 1000);
+}
+
+/* --- 3. EL DESCUBRIMIENTO --- */
+async function runDiscovery(){
+  showPanel('discovery');
+  await reveal($('#dLabel'), 250);
+  await sleep(950);
+  await reveal($('#dMain'), 0);
+  fadeTo(1, 'gold', 2600);
+  await sleep(1500);
+  await reveal($('#dSub'), 0);
+  await sleep(1500);
+
+  // la interfaz se desintegra en partículas doradas
+  fadeTo(0, 'hud', 1800);
+  fadeTo(0, 'glyph', 1400);
+  for (let i = 0; i < 4; i++){
+    burstParticles(W/2 + rnd(-160, 160), H/2 + rnd(-90, 90), 26, 3);
+    await sleep(120);
+  }
+  await hidePanel('discovery', 900);
+}
+
+/* --- 4. LA EXPLOSIÓN DE FLORES --- */
+async function runBloom(){
+  $('#glow').classList.add('on');
+  doFlash(REDUCED ? 0.35 : 0.8);
+  interactive = true;
+
+  const cx = W/2, cy = H/2;
+  const total = Math.round(CONFIG.flowerCount * (REDUCED ? 0.6 : 1) * (W < 700 ? 0.75 : 1));
+  const batches = 22;
+  const perBatch = Math.max(1, Math.round(total / batches));
+
+  spawnRing(cx, cy);
+  burstParticles(cx, cy, REDUCED ? 40 : 110, 7);
+
+  for (let b = 0; b < batches; b++){
+    const wave = b / batches;
+    for (let i = 0; i < perBatch; i++){
+      if (Math.random() < 0.26 && b > 6){
+        // algunas caen lentamente desde arriba
+        spawnFlower(rnd(0, W), rnd(-H * 0.5, -40), {
+          size: rnd(26, 70), vx: rnd(-.4, .4), vy: rnd(.2, .8)
+        });
+      } else {
+        const a = Math.random() * TAU;
+        const sp = rnd(3, 15) * (1 - wave * 0.35);
+        // las grandes salen del centro; las chicas van más lejos
+        const big = Math.random() < 0.22 - wave * 0.15;
+        spawnFlower(cx + Math.cos(a) * rnd(0, 40), cy + Math.sin(a) * rnd(0, 40), {
+          size: big ? rnd(78, 124) : rnd(24, 74),
+          vx: Math.cos(a) * sp,
+          vy: Math.sin(a) * sp * 0.85
+        });
+      }
+    }
+    for (let i = 0; i < (REDUCED ? 2 : 6); i++) spawnPetal(cx, cy, 16);
+    if (b % 4 === 0) burstParticles(cx, cy, 18, 6);
+    await sleep(58);
+  }
+  await sleep(1400);
+}
+
+/* --- 5. TRANSICIÓN EMOTIVA --- */
+async function runEmotion(){
+  const host = panels.emotion;
+  showPanel('emotion');
+
+  const seq = [
+    { t: FULLNAME + '...',        c: 'emo' },
+    { t: CONFIG.emotionalLines[0],c: 'emo small' },
+    { t: CONFIG.emotionalLines[1],c: 'emo small' },
+    { t: '🌼 ' + CONFIG.mainMessage + ' 🌼', c: 'emo hero' }
+  ];
+
+  for (let i = 0; i < seq.length; i++){
+    host.innerHTML = '';
+    const el = newLine(seq[i].t, seq[i].c);
+    host.appendChild(el);
+    await reveal(el, 120);
+    await sleep(i === seq.length - 1 ? 3400 : 2600);
+    if (i < seq.length - 1){
+      el.classList.remove('in'); el.classList.add('out');
+      await sleep(1000);
+    } else {
+      el.classList.remove('in'); el.classList.add('out');
+      await sleep(1100);
+    }
+  }
+  host.classList.remove('on');
+}
+
+/* --- 6. MENSAJE FINAL --- */
+async function runClosing(){
+  showPanel('closing');
+  await reveal($('#cFinal'), 300);
+  await sleep(2400);
+  await reveal($('#cThanks'), 0);
+  await sleep(3800);
+  await hidePanel('closing', 1200);
+}
+
+/* --- 7. DETALLE CIENTÍFICO FINAL --- */
+async function runStructure(){
+  initNet();
+  fadeTo(0.55, 'link', 1800);
+  await sleep(4800);          // partículas → molécula / hélice
+  await sleep(5000);          // hélice → flor
+  dissolveNet();
+  await sleep(2000);
+  fadeTo(0, 'link', 1600);
+}
+
+/* --- FINAL --- */
+async function runCard(){
+  showPanel('card');
+  const lines = panels.card.querySelectorAll('.line');
+  for (let i = 0; i < lines.length; i++){
+    reveal(lines[i], 0);
+    await sleep(700);
+  }
+  await sleep(600);
+  $('#hint').classList.add('on');
+}
+
+/* ---- orquestador ---- */
+async function startExperiment(){
+  await hidePanel('intro', 1100);
+  await sleep(300);
+  await runLab();
+  await runDiscovery();
+  await runBloom();
+  await runEmotion();
+  await runClosing();
+  await runStructure();
+  await runCard();
+}
+
+let started = false;
+$('#start').addEventListener('click', () => {
+  if (started) return;
+  started = true;
+  audio('start');
+  startExperiment();
+});
+
+/* ============================================================
+   INTERACCIÓN POSTERIOR — cada clic hace florecer la pantalla
+   ============================================================ */
+function bloomAt(x, y){
+  spawnFlower(x, y, {
+    size: rnd(34, 88),
+    vx: rnd(-1.6, 1.6),
+    vy: rnd(-2.2, -0.4)
+  });
+  const extra = Math.random() < 0.35 ? 1 : 0;
+  for (let i = 0; i < extra; i++){
+    spawnFlower(x + rnd(-40, 40), y + rnd(-30, 30), { size: rnd(20, 44), vx: rnd(-2, 2), vy: rnd(-2, 0) });
+  }
+  for (let i = 0; i < (REDUCED ? 3 : 9); i++) spawnPetal(x, y, 7);
+  burstParticles(x, y, REDUCED ? 8 : 18, 3.4);
+  spawnRing(x, y);
+  audio('bloom');
+}
+
+window.addEventListener('pointerdown', e => {
+  if (!interactive) return;
+  if (e.target.closest('button')) return;
+  bloomAt(e.clientX, e.clientY);
+}, { passive:true });
+
+// evita el "pull to refresh" / rebote en móvil
+document.addEventListener('touchmove', e => e.preventDefault(), { passive:false });
+
+/* ============================================================
+   AUDIO (desactivado)
+   ------------------------------------------------------------
+   Poné ENABLE_AUDIO = true y descomentá lo de adentro para
+   sumar sonido. Nunca arranca solo: sólo tras un clic del usuario.
+   ============================================================ */
+function audio(/* type */){
+  if (!ENABLE_AUDIO) return;
+  // const a = new Audio(type === 'start' ? 'start.mp3' : 'bloom.mp3');
+  // a.volume = 0.35;
+  // a.play().catch(() => {});
+}
+</script>
+</body>
+</html>
