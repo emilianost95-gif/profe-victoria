@@ -73,6 +73,8 @@ body{
       rgba(3,5,11,0) 74%, rgba(3,5,11,.55) 100%);
 }
 #scrim.on{opacity:1}
+/* fase ADN: velo mínimo, sin blur, para que se vea la estructura */
+#scrim.soft{opacity:.30}
 @media (min-width:900px){
   #scrim.on{backdrop-filter:blur(2.5px); -webkit-backdrop-filter:blur(2.5px)}
 }
@@ -996,21 +998,30 @@ function drawNet(){
   const nodes = NET.nodes, n = nodes.length;
   const fade = NET.dissolve ? clamp(1 - NET.dissolve, 0, 1) : NET.alpha;
 
+  // halo oscuro propio: despega la estructura del campo de flores
+  const HR = Math.min(W, H) * 0.55;
+  const hg = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, HR);
+  hg.addColorStop(0,   'rgba(3,5,11,' + (0.60 * fade) + ')');
+  hg.addColorStop(.55, 'rgba(3,5,11,' + (0.32 * fade) + ')');
+  hg.addColorStop(1,   'rgba(3,5,11,0)');
+  ctx.fillStyle = hg;
+  ctx.fillRect(0, 0, W, H);
+
   ctx.globalCompositeOperation = 'lighter';
-  ctx.lineWidth = 1;
+  ctx.lineWidth = 1.4;
   for (let i = 0; i < n; i++){
     for (const step of [1, 2]){
       const a = nodes[i], b = nodes[(i + step) % n];
       const d = Math.hypot(a.x - b.x, a.y - b.y);
-      const k = clamp(1 - d / (Math.min(W, H) * 0.34), 0, 1) * 0.42 * fade;
+      const k = clamp(1 - d / (Math.min(W, H) * 0.34), 0, 1) * 0.58 * fade;
       if (k < 0.01) continue;
       ctx.strokeStyle = 'rgba(255,212,100,' + k + ')';
       ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
     }
   }
   for (const nd of nodes){
-    ctx.globalAlpha = 0.85 * fade;
-    ctx.drawImage(DOT_GOLD, nd.x - 9, nd.y - 9, 18, 18);
+    ctx.globalAlpha = fade;
+    ctx.drawImage(DOT_GOLD, nd.x - 13, nd.y - 13, 26, 26);
   }
   ctx.globalAlpha = 1;
   ctx.globalCompositeOperation = 'source-over';
@@ -1032,10 +1043,10 @@ function frame(){
   drawLinks();
   drawHud();
   drawParticles();
-  drawNet();
   drawRings();
   drawPetals();
   drawFlowers();
+  drawNet();          // último: la estructura nunca queda tapada por las flores
 
   requestAnimationFrame(frame);
 }
@@ -1273,6 +1284,14 @@ async function runClosing(){
 
 /* --- 7. DETALLE CIENTÍFICO FINAL --- */
 async function runStructure(){
+  const scrim = $('#scrim');
+
+  // el velo se baja ANTES de armar la estructura y se espera a que
+  // termine la transición de 2s, si no el ADN nace ya tapado
+  scrim.classList.remove('on');
+  scrim.classList.add('soft');
+  await sleep(1600);
+
   initNet();
   fadeTo(0.55, 'link', 1800);
   await sleep(4800);          // partículas → molécula / hélice
@@ -1280,6 +1299,11 @@ async function runStructure(){
   dissolveNet();
   await sleep(2000);
   fadeTo(0, 'link', 1600);
+
+  // vuelve el velo completo para que la tarjeta final se lea
+  scrim.classList.remove('soft');
+  scrim.classList.add('on');
+  await sleep(1400);
 }
 
 /* --- FINAL --- */
